@@ -1,0 +1,73 @@
+
+============= References ==========
+https://www.youtube.com/watch?v=RVvKPP5HyaA - Logging - Spring AOP | @Around Advice | Centralized logging | Java Techie
+
+
+
+
+AOP is use to seggregate business logic with secondory logic (logging, execution time tracking)
+
+============ Goal ===============
+There is a product controller. Its fetching and adding products. 
+I want to centerilized logs using AOP. I want to log the method name, arguments and class name and response using AOP advice
+
+========== Solution ============
+1. Add AOP maven dependency
+2. Create logging Aspect
+
+@Aspect
+@Component
+public class LoggingAspect {
+
+    private static final Logger logger = LoggerFactory.getLogger(LoggingAspect.class);
+
+    @Around("execution(* com.yourpackage.controller..*(..))")
+    public Object logMethodCall(ProceedingJoinPoint joinPoint) throws Throwable {
+        String className = joinPoint.getTarget().getClass().getSimpleName();
+        String methodName = joinPoint.getSignature().getName();
+        Object[] methodArgs = joinPoint.getArgs();
+
+        logger.info("Entering method: {}.{} with arguments: {}", className, methodName, Arrays.toString(methodArgs));
+
+        Object result = joinPoint.proceed();
+
+        logger.info("Exiting method: {}.{} with result: {}", className, methodName, result);
+
+        return result;
+    }
+}
+
+========== Output ==============
+INFO  c.y.y.LoggingAspect - Entering method: ProductController.getProduct with arguments: [1]
+INFO  c.y.y.LoggingAspect - Exiting method: ProductController.getProduct with result: Product{id=1, name='Sample Product'}
+
+
+======== Explanation =========
+pointcut - specifies where to execute the aspect. In here in each method in controller before and after execution the methos
+@Around("execution(* com.yourpackage.controller..*(..))")
+
+The @Around advice is one of the most powerful types of advice in Spring AOP. 
+It allows you to run custom logic both before and after the execution of a method, and also gives you full control.
+
+🧠 Anatomy of @Around
+Here’s a breakdown of this part:
+@Around("execution(* com.example.controller..*(..))")
+public Object logMethodCall(ProceedingJoinPoint joinPoint) throws Throwable {
+    // before method
+    Object result = joinPoint.proceed();  // run the actual method
+    // after method
+    return result;
+}
+
+
+🔄 Summary Table
+Advice Type	      When it Runs	          Can Access Method Args?	    Can Modify Return?	    Can Catch Exceptions?
+@Before	          Before method	          ✅ Yes	                    ❌ No	                  ❌ No
+@After	          After method (always)	  ✅ Yes	                    ❌ No	                  ❌ No
+@AfterReturning	  After successful return	✅ Yes	                    ✅ (indirectly)	        ❌ No
+@AfterThrowing	  On exception	          ✅ Yes	                    ❌ No	                  ✅ Yes
+@Around	          Before + After	        ✅ Yes	                    ✅ Yes	                ✅ Yes
+
+
+AOP internally uses reflections. that's why we able to access method name, class name here in joinPoint during logging.
+
